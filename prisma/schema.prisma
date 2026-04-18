@@ -1,0 +1,276 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ===== USERS & AUTH =====
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  // Auth
+  passwordHash  String?   // null if passwordless-only
+  emailVerified DateTime?
+  
+  // Memberships (one per tenant/brand)
+  memberships   Membership[]
+  
+  // Purchases
+  purchases     Purchase[]
+  
+  // Progress tracking
+  progress      ContentProgress[]
+  
+  // Magic link tokens
+  magicLinks    MagicLink[]
+}
+
+model MagicLink {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  email     String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+  
+  user      User     @relation(fields: [email], references: [email])
+  
+  @@index([email])
+  @@index([token])
+}
+
+// ===== MULTI-TENANT STRUCTURE =====
+
+model Tenant {
+  id          String   @id @default(cuid())
+  slug        String   @unique // 'andrea', 'christopher', 'sapient'
+  name        String   // "Andrea Bertoli", "Sapient", etc.
+  domain      String?  // Custom domain (andreabertoli.com)
+  
+  // Branding
+  primaryColor    String @default("#2d5016") // Forest green
+  accentColor     String @default("#d4a373") // Gold
+  logoUrl         String?
+  
+  // Settings
+  stripeAccountId String? // Connected Stripe account
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  memberships Membership[]
+  tiers       Tier[]
+  content     Content[]
+  products    Product[]
+  
+  @@index([slug])
+}
+
+// ===== MEMBERSHIP SYSTEM =====
+
+model Membership {
+  id              String   @id @default(cuid())
+  userId          String
+  tenantId        String
+  tierId          String
+  
+  status          String   @default("active") // 'active', 'cancelled', 'expired', 'past_due'
+  stripeCustomerId       String?
+  stripeSubscriptionId   String? // null for free tier
+  
+  startedAt       DateTime @default(now())
+  cancelledAt     DateTime?
+  expiresAt       DateTime? // null = lifetime/active subscription
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  user            User     @relation(fields: [userId], references: [id])
+  tenant          Tenant   @relation(fields: [tenantId], references: [id])
+  tier            Tier     @relation(fields: [tierId], references: [id])
+  
+  @@unique([userId, tenantId]) // One membership per user per tenant
+  @@index([userId])
+  @@index([tenantId])
+  @@index([status])
+}
+
+model Tier {
+  id              String   @id @default(cuid())
+  tenantId        String
+  slug            String   // 'free', 'depth_seeker', 'active_learner'
+  name            String   // "Depth Seeker", "Active Learner"
+  description     String?
+  price           Int      // Cents (0 for free, 1500 for $15, 7500 for $75)
+  stripePriceId   String?  // Stripe recurring price ID
+  
+  // Access level (hierarchy: higher = more access)
+  level           Int      // 0 = free, 10 = depth_seeker, 20 = active_learner
+  
+  // Features (JSON array)
+  features        Json?    // ["All mini-courses", "Workshop library", ...]
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  tenant          Tenant   @relation(fields: [tenantId], references: [id])
+  memberships     Membership[]
+  
+  @@unique([tenantId, slug])
+  @@index([tenantId])
+}
+
+// ===== CONTENT MANAGEMENT =====
+
+model Content {
+  id              String   @id @default(cuid())
+  tenantId        String
+  slug            String   // URL-friendly: 'sexual-foundations-women'
+  title           String
+  description     String?  @db.Text
+  
+  type            String   // 'mini_course', 'workshop', 'workbook', 'meditation', 'webinar', 'template'
+  
+  // Access control
+  requiredTierLevel Int    @default(0) // Minimum tier level required
+  
+  // Content delivery
+  youtubeUrl      String?  // Unlisted YouTube video
+  downloadUrl     String?  // PDF/file download link
+  bodyContent     String?  @db.Text // Rich text lesson notes (Markdown or HTML)
+  
+  // Metadata
+  duration        String?  // "45 min", "1 hour 15 min"
+  thumbnailUrl    String?
+  sortOrder       Int      @default(0)
+  
+  // Drip scheduling
+  releaseDate     DateTime? // Global release date
+  dripDays        Int?      // Days after signup to unlock
+  
+  // Organization
+  collectionId    String?
+  
+  published       Boolean  @default(false)
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  tenant          Tenant   @relation(fields: [tenantId], references: [id])
+  collection      Collection? @relation(fields: [collectionId], references: [id])
+  progress        ContentProgress[]
+  
+  @@unique([tenantId, slug])
+  @@index([tenantId, type])
+  @@index([requiredTierLevel])
+}
+
+model Collection {
+  id          String   @id @default(cuid())
+  tenantId    String
+  slug        String
+  title       String
+  description String?  @db.Text
+  thumbnailUrl String?
+  sortOrder   Int      @default(0)
+  
+  content     Content[]
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@unique([tenantId, slug])
+}
+
+// ===== PROGRESS TRACKING =====
+
+model ContentProgress {
+  id              String   @id @default(cuid())
+  userId          String
+  contentId       String
+  
+  // Video progress
+  watchedSeconds  Int      @default(0)
+  totalSeconds    Int?
+  completed       Boolean  @default(false)
+  
+  // Download tracking
+  downloaded      Boolean  @default(false)
+  
+  lastWatchedAt   DateTime?
+  completedAt     DateTime?
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  user            User     @relation(fields: [userId], references: [id])
+  content         Content  @relation(fields: [contentId], references: [id])
+  
+  @@unique([userId, contentId])
+  @@index([userId])
+  @@index([contentId])
+}
+
+// ===== ONE-TIME PURCHASES =====
+
+model Product {
+  id              String   @id @default(cuid())
+  tenantId        String
+  slug            String
+  title           String
+  description     String?  @db.Text
+  type            String   // 'flagship_program', 'coaching_3pack', 'coaching_10pack', 'webinar_bundle'
+  
+  price           Int      // Cents
+  stripePriceId   String   // Stripe one-time price ID
+  
+  // Tier-based pricing (discounts)
+  tierPricing     Json?    // { "free": 79700, "depth_seeker": 69700, "active_learner": 59700 }
+  
+  // Access grants
+  grantsContentIds String[] // Content IDs unlocked by this purchase
+  grantsTierId     String?  // Optionally grant a tier
+  
+  published       Boolean  @default(false)
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  tenant          Tenant   @relation(fields: [tenantId], references: [id])
+  purchases       Purchase[]
+  
+  @@unique([tenantId, slug])
+  @@index([tenantId])
+}
+
+model Purchase {
+  id                     String   @id @default(cuid())
+  userId                 String
+  productId              String
+  
+  amount                 Int      // Cents paid
+  stripePaymentIntentId  String   @unique
+  stripeSessionId        String?  // Checkout session ID
+  
+  status                 String   @default("succeeded") // 'succeeded', 'refunded', 'disputed'
+  
+  // Access expiration (null = lifetime)
+  accessExpiresAt        DateTime?
+  
+  purchasedAt            DateTime @default(now())
+  
+  user                   User     @relation(fields: [userId], references: [id])
+  product                Product  @relation(fields: [productId], references: [id])
+  
+  @@index([userId])
+  @@index([productId])
+}
