@@ -1,13 +1,11 @@
 import NextAuth from 'next-auth'
 export const dynamic = 'force-dynamic'
-import { PrismaAdapter } from '@auth/prisma-adapter'
 import { getPrisma } from '@/lib/prisma'
 
 const handler = NextAuth({
-  adapter: PrismaAdapter(getPrisma()),
+  // No adapter at build time — we use JWT strategy which doesn't require DB at session level
+  // PrismaAdapter can be added later when we need database-backed sessions
   providers: [
-    // Magic link provider will be added here
-    // For now, we'll use a credentials provider for testing
     {
       id: 'magic-link',
       name: 'Magic Link',
@@ -19,8 +17,8 @@ const handler = NextAuth({
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.token) return null
         
-        // Verify magic link token
-        const magicLink = await getPrisma().magicLink.findUnique({
+        const prisma = getPrisma()
+        const magicLink = await prisma.magicLink.findUnique({
           where: { token: credentials.token },
           include: { user: true },
         })
@@ -29,8 +27,7 @@ const handler = NextAuth({
           return null
         }
         
-        // Mark token as used
-        await getPrisma().magicLink.update({
+        await prisma.magicLink.update({
           where: { id: magicLink.id },
           data: { usedAt: new Date() },
         })
