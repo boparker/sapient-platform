@@ -230,7 +230,7 @@ model Product {
   type            String   // 'flagship_program', 'coaching_3pack', 'coaching_10pack', 'webinar_bundle'
   
   price           Int      // Cents
-  stripePriceId   String   // Stripe one-time price ID
+  stripePriceId   String?  // Stripe one-time price ID
   
   // Tier-based pricing (discounts)
   tierPricing     Json?    // { "free": 79700, "depth_seeker": 69700, "active_learner": 59700 }
