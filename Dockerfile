@@ -1,34 +1,30 @@
-FROM node:22.14.0-slim AS base
-
-# Force cache invalidation
-ARG CACHEBUST=1
+FROM node:22.14.0-slim
 
 WORKDIR /app
 
 # Install OpenSSL (needed by Prisma)
 RUN apt-get update && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 
-# Install dependencies
-COPY package.json package-lock.json prisma ./prisma ./
+# ---- Install deps ----
+COPY package.json package-lock.json ./
+COPY prisma ./prisma/
+COPY prisma.config.ts ./
+
 RUN npm ci
 
-# Copy all source
+# ---- Copy source and build ----
 COPY . .
 
-# Generate Prisma client
-RUN npx prisma generate
+# Dummy DATABASE_URL for build (Prisma generate + build needs it)
+ENV DATABASE_URL="postgresql://dummy:dummy@localhost:5432/dummy"
 
-# Build Next.js with dummy DATABASE_URL (only for build step)
-ARG DATABASE_URL=postgresql://dummy:dummy@localhost:5432/dummy
-ENV DATABASE_URL=${DATABASE_URL}
-RUN npm run build
+RUN npx prisma generate && npm run build
 
-# Reset DATABASE_URL so Railway's real value takes over at runtime
+# ---- Runtime config ----
+# Reset DATABASE_URL so Railway's real value takes over
 ENV DATABASE_URL=""
-
-# Start the app
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-# Use node directly to start Next.js (avoids npm overhead)
-CMD ["sh", "-c", "echo 'Starting app...' && npx prisma db push --accept-data-loss && echo 'DB push done, starting Next.js...' && exec node node_modules/.bin/next start"]
+# Start: push schema to DB, then start Next.js
+CMD ["sh", "-c", "npx prisma db push --accept-data-loss 2>&1 && echo 'DB ready, starting Next.js...' && exec node node_modules/.bin/next start"]
