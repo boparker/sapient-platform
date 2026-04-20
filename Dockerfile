@@ -22,11 +22,11 @@ ENV DATABASE_URL=${DATABASE_URL}
 # Build Next.js
 RUN npm run build
 
-# Remove build-time DATABASE_URL so Railway's real one takes over
+# Remove build-time DATABASE_URL so Railway's real one takes over at runtime
 ENV DATABASE_URL=""
 
 # Start the app
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-CMD ["sh", "-c", "npx prisma migrate deploy && node .next/standalone/server.js"]
+CMD ["sh", "-c", "npx prisma db push --accept-data-loss && npm run start"]
