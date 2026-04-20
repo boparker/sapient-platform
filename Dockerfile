@@ -15,6 +15,9 @@ COPY . .
 # Generate Prisma client
 RUN npx prisma generate
 
+# Provide dummy DATABASE_URL for build (Prisma tries to connect during build)
+ENV DATABASE_URL="postgresql://dummy:dummy@localhost:5432/dummy"
+
 # Build Next.js
 RUN npm run build
 
