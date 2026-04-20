@@ -1,5 +1,8 @@
 FROM node:22.14.0-slim AS base
 
+# Force cache invalidation
+ARG CACHEBUST=1
+
 WORKDIR /app
 
 # Install OpenSSL (needed by Prisma)
