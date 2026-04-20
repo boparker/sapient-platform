@@ -15,11 +15,15 @@ COPY . .
 # Generate Prisma client
 RUN npx prisma generate
 
-# Provide dummy DATABASE_URL for build (Prisma tries to connect during build)
-ENV DATABASE_URL="postgresql://dummy:dummy@localhost:5432/dummy"
+# Provide dummy DATABASE_URL for build only
+ARG DATABASE_URL="postgresql://dummy:dummy@localhost:5432/dummy"
+ENV DATABASE_URL=${DATABASE_URL}
 
 # Build Next.js
 RUN npm run build
+
+# Remove build-time DATABASE_URL so Railway's real one takes over
+ENV DATABASE_URL=""
 
 # Start the app
 ENV PORT=3000
