@@ -1,10 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { Suspense, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 
-export default function LoginPage() {
+function LoginForm() {
   const [email, setEmail] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [message, setMessage] = useState('')
@@ -27,14 +27,13 @@ export default function LoginPage() {
 
       if (data.success) {
         setMessage('Check your email for a magic link to log in!')
-        // In development, show the link
         if (data.debug?.url) {
           console.log('Magic link:', data.debug.url)
         }
       } else {
         setMessage(data.error || 'Something went wrong')
       }
-    } catch (err) {
+    } catch {
       setMessage('Failed to send magic link')
     } finally {
       setIsLoading(false)
@@ -54,12 +53,8 @@ export default function LoginPage() {
       <div className="max-w-md w-full">
         <div className="bg-white rounded-2xl shadow-lg p-8">
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-serif text-forest mb-2">
-              Welcome Back
-            </h1>
-            <p className="text-charcoal">
-              Enter your email to receive a magic link
-            </p>
+            <h1 className="text-3xl font-serif text-forest mb-2">Welcome Back</h1>
+            <p className="text-charcoal">Enter your email to receive a magic link</p>
           </div>
 
           {error && (
@@ -76,10 +71,7 @@ export default function LoginPage() {
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
-              <label
-                htmlFor="email"
-                className="block text-sm font-medium text-forest mb-2"
-              >
+              <label htmlFor="email" className="block text-sm font-medium text-forest mb-2">
                 Email Address
               </label>
               <input
@@ -103,10 +95,7 @@ export default function LoginPage() {
           </form>
 
           <div className="mt-6 text-center">
-            <Link
-              href="/"
-              className="text-sage hover:text-forest transition-colors text-sm"
-            >
+            <Link href="/" className="text-sage hover:text-forest transition-colors text-sm">
               ← Back to home
             </Link>
           </div>
@@ -114,11 +103,17 @@ export default function LoginPage() {
 
         <p className="text-center text-sm text-charcoal mt-6">
           Don't have an account?{' '}
-          <Link href="/pricing" className="text-burgundy hover:underline">
-            Get started
-          </Link>
+          <Link href="/pricing" className="text-burgundy hover:underline">Get started</Link>
         </p>
       </div>
     </main>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
+      <LoginForm />
+    </Suspense>
   )
 }
