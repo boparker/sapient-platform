@@ -1,4 +1,5 @@
 import NextAuth from 'next-auth'
+export const dynamic = 'force-dynamic'
 import { PrismaAdapter } from '@auth/prisma-adapter'
 import { prisma } from '@/lib/prisma'
 
