@@ -15,7 +15,7 @@ export function VideoPlayer({ youtubeUrl, contentId, onProgress }: VideoPlayerPr
   const [progress, setProgress] = useState(0)
   const [watchedSeconds, setWatchedSeconds] = useState(0)
   const [duration, setDuration] = useState(0)
-  const progressInterval = useRef<NodeJS.Timeout>()
+  const progressInterval = useRef<NodeJS.Timeout>(null)
 
   // Extract video ID from YouTube URL
   const getVideoId = (url: string) => {
