@@ -15,17 +15,17 @@ COPY . .
 # Generate Prisma client
 RUN npx prisma generate
 
-# Build Next.js with dummy DATABASE_URL (only for build step, NOT persisted as ENV)
+# Build Next.js with dummy DATABASE_URL (only for build step)
 ARG DATABASE_URL=postgresql://dummy:dummy@localhost:5432/dummy
 ENV DATABASE_URL=${DATABASE_URL}
 RUN npm run build
 
-# Reset DATABASE_URL to empty so Railway's runtime ENV takes over
-# Note: Railway ENV vars override Dockerfile ENV vars at runtime
-ENV DATABASE_URL="" 
+# Reset DATABASE_URL so Railway's real value takes over at runtime
+ENV DATABASE_URL=""
 
 # Start the app
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-CMD ["sh", "-c", "npx prisma db push --accept-data-loss 2>/dev/null; npm run start"]
+# Use node directly to start Next.js (avoids npm overhead)
+CMD ["sh", "-c", "echo 'Starting app...' && npx prisma db push --accept-data-loss && echo 'DB push done, starting Next.js...' && exec node node_modules/.bin/next start"]
