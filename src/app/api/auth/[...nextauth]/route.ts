@@ -1,10 +1,10 @@
 import NextAuth from 'next-auth'
 export const dynamic = 'force-dynamic'
 import { PrismaAdapter } from '@auth/prisma-adapter'
-import { prisma } from '@/lib/prisma'
+import { getPrisma } from '@/lib/prisma'
 
 const handler = NextAuth({
-  adapter: PrismaAdapter(prisma),
+  adapter: PrismaAdapter(getPrisma()),
   providers: [
     // Magic link provider will be added here
     // For now, we'll use a credentials provider for testing
@@ -20,7 +20,7 @@ const handler = NextAuth({
         if (!credentials?.email || !credentials?.token) return null
         
         // Verify magic link token
-        const magicLink = await prisma.magicLink.findUnique({
+        const magicLink = await getPrisma().magicLink.findUnique({
           where: { token: credentials.token },
           include: { user: true },
         })
@@ -30,7 +30,7 @@ const handler = NextAuth({
         }
         
         // Mark token as used
-        await prisma.magicLink.update({
+        await getPrisma().magicLink.update({
           where: { id: magicLink.id },
           data: { usedAt: new Date() },
         })

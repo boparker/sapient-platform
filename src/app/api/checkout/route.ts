@@ -1,6 +1,6 @@
 export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { getPrisma } from '@/lib/prisma'
 
 // Stripe will be imported here when keys are available
 // import { stripe } from '@/lib/stripe'
@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Get tier details
-    const tier = await prisma.tier.findUnique({
+    const tier = await getPrisma().tier.findUnique({
       where: { id: tierId },
       include: { tenant: true },
     })

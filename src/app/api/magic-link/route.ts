@@ -1,6 +1,6 @@
 export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { getPrisma } from '@/lib/prisma'
 import { randomBytes } from 'crypto'
 
 export async function POST(req: NextRequest) {
@@ -15,13 +15,13 @@ export async function POST(req: NextRequest) {
     }
     
     // Find or create user
-    let user = await prisma.user.findUnique({
+    let user = await getPrisma().user.findUnique({
       where: { email: email.toLowerCase() },
     })
     
     if (!user) {
       // Create user on first login attempt
-      user = await prisma.user.create({
+      user = await getPrisma().user.create({
         data: {
           email: email.toLowerCase(),
         },
@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
     const expiresAt = new Date()
     expiresAt.setMinutes(expiresAt.getMinutes() + 15) // 15 min expiry
     
-    await prisma.magicLink.create({
+    await getPrisma().magicLink.create({
       data: {
         token,
         email: user.email,

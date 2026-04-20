@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { headers } from 'next/headers'
-import { prisma } from '@/lib/prisma'
+import { getPrisma } from '@/lib/prisma'
 
 // Stripe will be imported here when keys are available
 // import Stripe from 'stripe'
@@ -54,15 +54,15 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   const email = session.customer_email!
   
   // Create or get user
-  let user = await prisma.user.findUnique({ where: { email } })
+  let user = await getPrisma().user.findUnique({ where: { email } })
   if (!user) {
-    user = await prisma.user.create({
+    user = await getPrisma().user.create({
       data: { email, name: session.customer_details?.name }
     })
   }
   
   // Create membership
-  await prisma.membership.upsert({
+  await getPrisma().membership.upsert({
     where: { userId_tenantId: { userId: user.id, tenantId } },
     create: {
       userId: user.id,

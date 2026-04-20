@@ -1,10 +1,10 @@
-import { prisma } from '../src/lib/prisma'
+import { getPrisma } from '../src/lib/prisma'
 
 async function main() {
   console.log('Seeding database...')
 
   // Create Andrea tenant
-  const andrea = await prisma.tenant.upsert({
+  const andrea = await getPrisma().tenant.upsert({
     where: { slug: 'andrea' },
     update: {},
     create: {
@@ -17,7 +17,7 @@ async function main() {
   console.log('Created tenant:', andrea.name)
 
   // Create Christopher tenant
-  const christopher = await prisma.tenant.upsert({
+  const christopher = await getPrisma().tenant.upsert({
     where: { slug: 'christopher' },
     update: {},
     create: {
@@ -30,7 +30,7 @@ async function main() {
   console.log('Created tenant:', christopher.name)
 
   // Create tiers for Andrea
-  const freeTier = await prisma.tier.upsert({
+  const freeTier = await getPrisma().tier.upsert({
     where: { tenantId_slug: { tenantId: andrea.id, slug: 'free' } },
     update: {},
     create: {
@@ -49,7 +49,7 @@ async function main() {
   })
   console.log('Created tier:', freeTier.name)
 
-  const depthSeekerTier = await prisma.tier.upsert({
+  const depthSeekerTier = await getPrisma().tier.upsert({
     where: { tenantId_slug: { tenantId: andrea.id, slug: 'depth_seeker' } },
     update: {},
     create: {
@@ -71,7 +71,7 @@ async function main() {
   })
   console.log('Created tier:', depthSeekerTier.name)
 
-  const activeLearnerTier = await prisma.tier.upsert({
+  const activeLearnerTier = await getPrisma().tier.upsert({
     where: { tenantId_slug: { tenantId: andrea.id, slug: 'active_learner' } },
     update: {},
     create: {
@@ -95,7 +95,7 @@ async function main() {
   console.log('Created tier:', activeLearnerTier.name)
 
   // Create sample collection
-  const foundationsCollection = await prisma.collection.upsert({
+  const foundationsCollection = await getPrisma().collection.upsert({
     where: { tenantId_slug: { tenantId: andrea.id, slug: 'sexual-foundations' } },
     update: {},
     create: {
@@ -109,7 +109,7 @@ async function main() {
   console.log('Created collection:', foundationsCollection.title)
 
   // Create sample content
-  const lesson1 = await prisma.content.upsert({
+  const lesson1 = await getPrisma().content.upsert({
     where: { tenantId_slug: { tenantId: andrea.id, slug: 'lesson-1-body-literacy' } },
     update: {},
     create: {
@@ -130,7 +130,7 @@ async function main() {
   console.log('Created content:', lesson1.title)
 
   // Create flagship product
-  const flagshipProduct = await prisma.product.upsert({
+  const flagshipProduct = await getPrisma().product.upsert({
     where: { tenantId_slug: { tenantId: andrea.id, slug: 'perimenopausal-pivot' } },
     update: {},
     create: {
@@ -159,5 +159,5 @@ main()
     process.exit(1)
   })
   .finally(async () => {
-    await prisma.$disconnect()
+    await getPrisma().$disconnect()
   })

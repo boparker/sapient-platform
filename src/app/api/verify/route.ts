@@ -1,6 +1,6 @@
 export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { getPrisma } from '@/lib/prisma'
 import { signIn } from 'next-auth/react'
 
 export async function GET(req: NextRequest) {
@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
   
   try {
     // Verify token
-    const magicLink = await prisma.magicLink.findUnique({
+    const magicLink = await getPrisma().magicLink.findUnique({
       where: { token },
       include: { user: true },
     })
@@ -31,7 +31,7 @@ export async function GET(req: NextRequest) {
     }
     
     // Mark token as used
-    await prisma.magicLink.update({
+    await getPrisma().magicLink.update({
       where: { id: magicLink.id },
       data: { usedAt: new Date() },
     })
