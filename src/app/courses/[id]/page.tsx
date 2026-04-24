@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { PlayCircle, CheckCircle, Clock, Lock, ChevronLeft } from 'lucide-react'
-import { VideoPlayer } from '@/components/VideoPlayer'
+import { CourseVideoPlayer } from '@/components/CourseVideoPlayer'
 
 // Course data — will be replaced with DB data once seeded
 const allCourses: Record<string, {
@@ -204,12 +204,9 @@ export default async function CoursePage({ params }: PageProps) {
           <div className="lg:col-span-2">
             {/* Current Lesson Video */}
             <div className="mb-8">
-              <VideoPlayer
+              <CourseVideoPlayer
                 youtubeUrl={currentLesson.youtubeUrl}
                 contentId={currentLesson.id}
-                onProgress={(progress) => {
-                  console.log('Progress:', progress)
-                }}
               />
             </div>
 
